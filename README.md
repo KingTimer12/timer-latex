@@ -64,11 +64,11 @@ src-tauri/
 - [x] Binários cross-platform (Linux, macOS Intel, macOS Apple Silicon, Windows)
 - [x] Aliases de path (`@/*`)
 - [x] Roteamento com React Router DOM
-- [ ] Auto-compilação ao parar de digitar (debounce)
+- [x] Auto-compilação ao parar de digitar (debounce)
 - [ ] Indicador de carregamento durante a compilação
 - [ ] Exibição de erros de compilação inline no editor
 - [ ] Atalho de teclado para compilar (ex: `Ctrl+Enter`)
-- [ ] Numeração de linhas e tema escuro no editor
+- [ ] Tema escuro no editor
 - [ ] Abrir arquivos `.tex` do sistema de arquivos
 - [ ] Salvar arquivo atual
 - [ ] Salvar como...

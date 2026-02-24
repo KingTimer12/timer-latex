@@ -1,45 +1,49 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { latex } from "codemirror-lang-latex";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import React from "react";
-import { Button } from "@/components/ui/button";
+import LatexPreview from "@/components/latex-preview";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+
+const DEBOUNCE_MS = 1000;
 
 export default function Home() {
-  const [pdfUrl, setPdfUrl] = React.useState<string | null>(null);
-  const [value, setValue] = React.useState(`
-    \\documentclass{article}
-    \\begin{document}
-    Hello World! This is my first LaTeX document.
-    \\end{document}
-    `);
-  const onChange = React.useCallback((val: string) => {
-    console.log("val:", val);
-    setValue(val);
-  }, []);
+  const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
+  const [value, setValue] = React.useState<string>("");
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function renderPdf() {
-    const path: string = await invoke("compile_latex", { content: value });
-    const assetUrl = convertFileSrc(path) + `?t=${Date.now()}`;
-    setPdfUrl(assetUrl);
+  async function compile(content: string) {
+    const bytes: number[] = await invoke("compile_latex", { content });
+    setPdfData(new Uint8Array(bytes));
   }
+
+  const onChange = React.useCallback((val: string) => {
+    setValue(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
+  }, []);
 
   return (
     <main className="flex h-screen">
-      <div className="h-full w-1/2">
-        <CodeMirror
-          value={value}
-          height="100%"
-          style={{ height: "100%" }}
-          extensions={[latex()]}
-          onChange={onChange}
-        />
-      </div>
-      <div className="h-full w-1/2">
-        <Button onClick={renderPdf}>Compilar</Button>
-        {pdfUrl && (
-          <iframe src={pdfUrl} style={{ width: "100%", height: "80vh" }} />
-        )}
-      </div>
+      <ResizablePanelGroup>
+        <ResizablePanel defaultSize='50%'>
+          <div className="h-full">
+            <CodeMirror
+              value={value}
+              height="100%"
+              style={{ height: "100%" }}
+              extensions={[latex()]}
+              onChange={onChange}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize='50%'>
+          <div className="flex h-full flex-col">
+            <LatexPreview pdfData={pdfData} />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </main>
   );
 }
