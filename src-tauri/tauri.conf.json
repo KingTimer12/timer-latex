@@ -14,7 +14,10 @@
       {
         "title": "timer-latex",
         "width": 1280,
-        "height": 720
+        "height": 720,
+        "decorations": false,
+        "shadow": false,
+        "transparent": true
       }
     ],
     "security": {

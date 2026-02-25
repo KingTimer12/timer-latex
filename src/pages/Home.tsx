@@ -3,6 +3,8 @@ import { latex } from "codemirror-lang-latex";
 import { invoke } from "@tauri-apps/api/core";
 import React from "react";
 import LatexPreview from "@/components/latex-preview";
+import TitleBar from "@/components/title-bar";
+import StatusBar from "@/components/status-bar";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -17,11 +19,16 @@ import { lintGutter } from "@codemirror/lint";
 import { bracketMatching } from "@codemirror/language";
 import { createTexlabTransport } from "@/lib/texlab-transport";
 import { type Extension } from "@codemirror/state";
+import { useLoadStore } from "@/hook/loading-store";
+import { useThemeStore } from "@/hook/theme-store";
+import { Spinner } from "@/components/ui/spinner";
 
 const DEBOUNCE_MS = 1000;
 const FILE_URI = "file:///tmp/timer-latex/main.tex";
 
 export default function Home() {
+  const { startLoading, stopLoading, loading } = useLoadStore();
+  const { theme } = useThemeStore();
   const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
   const [value, setValue] = React.useState<string>("");
   const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
@@ -52,6 +59,7 @@ export default function Home() {
   }, []);
 
   async function compile(content: string) {
+    startLoading();
     const bytes: number[] = await invoke("compile_latex", { content });
     setPdfData(new Uint8Array(bytes));
   }
@@ -63,26 +71,42 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex h-screen">
-      <ResizablePanelGroup direction="horizontal">
+    <main className="flex flex-col h-full">
+      <TitleBar />
+      <ResizablePanelGroup className="flex-1 min-h-0">
         <ResizablePanel defaultSize={50}>
           <div className="h-full">
             <CodeMirror
               value={value}
               height="100%"
               style={{ height: "100%" }}
-              extensions={[latex(), lintGutter(), bracketMatching(), ...lspExtensions]}
+              theme={theme}
+              extensions={[
+                latex(),
+                lintGutter(),
+                bracketMatching(),
+                ...lspExtensions,
+              ]}
               onChange={onChange}
             />
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50}>
-          <div className="flex h-full flex-col">
+          <div className="relative flex h-full flex-col">
+            {loading > 0 && (
+              <div className="absolute w-full h-full flex gap-2 justify-center items-center bg-primary/40 backdrop-blur-lg">
+                <div className="animate-pulse flex gap-2 justify-center text-primary-foreground">
+                  <Spinner className="size-5" />
+                  <p>Compilando...</p>
+                </div>
+              </div>
+            )}
             <LatexPreview pdfData={pdfData} />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+      <StatusBar />
     </main>
   );
 }
