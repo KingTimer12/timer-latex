@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { invoke } from "@tauri-apps/api/core";
 import { FileText, FolderCode, LayoutTemplate } from "lucide-react";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 const templates = [
@@ -36,6 +38,12 @@ const templates = [
     label: "Vazio",
     description: "Documento em branco",
     icon: FileText,
+  },
+  {
+    id: "simple",
+    label: "Simples",
+    description: "Estrutura básica para documentos LaTeX",
+    icon: FolderCode,
   },
   {
     id: "article",
@@ -49,12 +57,13 @@ type TemplateId = (typeof templates)[number]["id"];
 
 const createLaTeXSchema = z.object({
   name: z.string().min(1, "O nome do projeto é obrigatório"),
-  template: z.enum(["empty", "article"]),
+  template: z.enum(["empty", "simple", "article"]),
 });
 
 type CreateLaTeXValues = z.infer<typeof createLaTeXSchema>;
 
 const CreateLaTeX = React.memo(() => {
+  const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
 
   const { control, handleSubmit, reset } = useForm<CreateLaTeXValues>({
@@ -62,7 +71,12 @@ const CreateLaTeX = React.memo(() => {
     defaultValues: { name: "", template: "empty" },
   });
 
-  function onSubmit(data: CreateLaTeXValues) {
+  async function onSubmit(data: CreateLaTeXValues) {
+    await invoke("create_project", {
+      title: data.name,
+      template: data.template,
+    });
+    navigate("/" + data.name);
     console.log(data);
     setOpen(false);
     reset();

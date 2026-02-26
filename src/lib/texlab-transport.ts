@@ -3,10 +3,6 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { type Transport } from "@codemirror/lsp-client";
 
 const TEXLAB_INIT_OPTIONS = {
-  chktex: {
-    onOpenAndSave: true,
-    onEdit: true,
-  },
   diagnosticsDelay: 300,
 };
 

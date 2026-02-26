@@ -22,50 +22,76 @@ import { type Extension } from "@codemirror/state";
 import { useLoadStore } from "@/hook/loading-store";
 import { useThemeStore } from "@/hook/theme-store";
 import { Spinner } from "@/components/ui/spinner";
+import { useParams } from "react-router-dom";
 
 const DEBOUNCE_MS = 1000;
-const FILE_URI = "file:///tmp/timer-latex/main.tex";
 
 export default function Editor() {
-  const { startLoading, loading } = useLoadStore();
+  const { file } = useParams();
+  const { startLoading, stopLoading, loading } = useLoadStore();
   const { theme } = useThemeStore();
   const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
+  const [compileError, setCompileError] = React.useState<string | null>(null);
   const [value, setValue] = React.useState<string>("");
   const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lspClientRef = React.useRef<LSPClient | null>(null);
 
   React.useEffect(() => {
-    const client = new LSPClient({
-      rootUri: "file:///tmp/timer-latex",
-      extensions: [...languageServerExtensions(), serverDiagnostics()],
-    });
-    lspClientRef.current = client;
-
     let mounted = true;
 
-    createTexlabTransport()
-      .then((transport) => {
-        if (!mounted) return;
-        client.connect(transport);
-        setLspExtensions([client.plugin(FILE_URI, "latex")]);
-      })
-      .catch(console.error);
+    invoke<string>("get_project_dir").then((dir) => {
+      if (!mounted) return;
+
+      const fileUri = `file://${dir}/main.tex`;
+      const rootUri = `file://${dir}`;
+
+      const client = new LSPClient({
+        rootUri,
+        extensions: [...languageServerExtensions(), serverDiagnostics()],
+      });
+      lspClientRef.current = client;
+
+      createTexlabTransport()
+        .then((transport) => {
+          if (!mounted) return;
+          client.connect(transport);
+          setLspExtensions([client.plugin(fileUri, "latex")]);
+        })
+        .catch(console.error);
+    });
 
     return () => {
       mounted = false;
-      client.disconnect();
+      lspClientRef.current?.disconnect();
     };
   }, []);
 
   async function compile(content: string) {
     startLoading();
-    const bytes: number[] = await invoke("compile_latex", { content });
-    setPdfData(new Uint8Array(bytes));
+    try {
+      const bytes: number[] = await invoke("compile_project", {
+        content,
+        title: file,
+      });
+      setPdfData(new Uint8Array(bytes));
+      setCompileError(null);
+    } catch (e) {
+      const raw = String(e);
+      // Extrai apenas as linhas de erro do stderr do tectonic, removendo "downloading..." noise
+      const errorLines = raw
+        .split("\n")
+        .filter((l) => l.startsWith("error:") || l.startsWith("!"))
+        .join("\n");
+      setCompileError(errorLines || raw);
+    } finally {
+      stopLoading();
+    }
   }
 
   const onChange = React.useCallback((val: string) => {
     setValue(val);
+    invoke("write_tex", { content: val }).catch(() => {});
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
   }, []);
@@ -103,6 +129,13 @@ export default function Editor() {
               </div>
             )}
             <LatexPreview pdfData={pdfData} />
+            {compileError && (
+              <div className="shrink-0 max-h-40 overflow-y-auto border-t border-destructive/40 bg-destructive/5 px-3 py-2">
+                <pre className="text-destructive text-xs font-mono whitespace-pre-wrap leading-relaxed">
+                  {compileError}
+                </pre>
+              </div>
+            )}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

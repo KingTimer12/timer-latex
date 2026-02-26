@@ -1,0 +1,60 @@
+\documentclass[
+	article,
+	11pt,
+	oneside,
+	a4paper,
+	english,
+	brazil,
+	sumario=tradicional
+]{abntex2}
+
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{indentfirst}
+\usepackage{color}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage[brazilian,hyperpageref]{backref}
+\usepackage[alf]{abntex2cite}
+
+\titulo{<%= title %>}
+\autor{Autor}
+\local{Brasil}
+\data{\today}
+
+\begin{document}
+
+\frenchspacing
+\maketitle
+
+\begin{resumoumacoluna}
+Resumo do artigo.
+
+\vspace{\onelineskip}
+
+\noindent
+\textbf{Palavras-chaves}: palavra1. palavra2.
+\end{resumoumacoluna}
+
+\textual
+
+\section*{Introdução}
+\addcontentsline{toc}{section}{Introdução}
+
+Introdução do artigo.
+
+\section{Desenvolvimento}
+
+Desenvolvimento do artigo.
+
+\section*{Considerações finais}
+\addcontentsline{toc}{section}{Considerações finais}
+
+Considerações finais.
+
+\postextual
+
+\bibliography{referencias}
+
+\end{document}
