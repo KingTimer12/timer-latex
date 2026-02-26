@@ -24,7 +24,7 @@ export default function LatexPreview({ pdfData }: LatexPreviewProps) {
     if (!pdf) return;
 
     pagesEl.innerHTML = "";
-    const availableWidth = pagesEl.clientWidth;
+    const availableWidth = scrollRef.current?.clientWidth ?? pagesEl.clientWidth;
     const dpr = window.devicePixelRatio || 1;
 
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -62,6 +62,7 @@ export default function LatexPreview({ pdfData }: LatexPreviewProps) {
 
     loadingTask.promise.then((pdf) => {
       pdfRef.current = pdf;
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
       renderAll(pagesEl, theme === "dark").then(() => resetLoading());
     });
 
@@ -90,7 +91,8 @@ export default function LatexPreview({ pdfData }: LatexPreviewProps) {
       }, 150);
     });
 
-    observer.observe(pagesEl);
+    const scrollEl = scrollRef.current;
+    if (scrollEl) observer.observe(scrollEl);
 
     return () => {
       observer.disconnect();
@@ -100,7 +102,7 @@ export default function LatexPreview({ pdfData }: LatexPreviewProps) {
 
   return (
     <div ref={scrollRef} className={`h-full overflow-y-auto ${theme === "dark" ? "bg-neutral-800" : "bg-neutral-200"}`}>
-      <div ref={pagesRef} />
+      <div ref={pagesRef} className="px-4 py-4" />
     </div>
   );
 }

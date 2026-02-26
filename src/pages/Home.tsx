@@ -95,7 +95,7 @@ export default function Home() {
         <ResizablePanel defaultSize={50}>
           <div className="relative flex h-full flex-col">
             {loading > 0 && (
-              <div className="absolute w-full h-full flex gap-2 justify-center items-center bg-primary/40 backdrop-blur-lg">
+              <div className="absolute z-50 w-full h-full flex gap-2 justify-center items-center bg-primary/40 backdrop-blur-lg">
                 <div className="animate-pulse flex gap-2 justify-center text-primary-foreground">
                   <Spinner className="size-5" />
                   <p>Compilando...</p>
