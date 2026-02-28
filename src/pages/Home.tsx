@@ -1,112 +1,204 @@
-import CodeMirror from "@uiw/react-codemirror";
-import { latex } from "codemirror-lang-latex";
-import { invoke } from "@tauri-apps/api/core";
-import React from "react";
-import LatexPreview from "@/components/latex-preview";
 import TitleBar from "@/components/title-bar";
-import StatusBar from "@/components/status-bar";
+import { Button } from "@/components/ui/button";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
-  LSPClient,
-  languageServerExtensions,
-  serverDiagnostics,
-} from "@codemirror/lsp-client";
-import { lintGutter } from "@codemirror/lint";
-import { bracketMatching } from "@codemirror/language";
-import { createTexlabTransport } from "@/lib/texlab-transport";
-import { type Extension } from "@codemirror/state";
-import { useLoadStore } from "@/hook/loading-store";
-import { useThemeStore } from "@/hook/theme-store";
-import { Spinner } from "@/components/ui/spinner";
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { invoke } from "@tauri-apps/api/core";
+import { FileText, FolderCode, LayoutTemplate } from "lucide-react";
+import React from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 
-const DEBOUNCE_MS = 1000;
-const FILE_URI = "file:///tmp/timer-latex/main.tex";
+const templates = [
+  {
+    id: "empty",
+    label: "Vazio",
+    description: "Documento em branco",
+    icon: FileText,
+  },
+  {
+    id: "simple",
+    label: "Simples",
+    description: "Estrutura básica para documentos LaTeX",
+    icon: FolderCode,
+  },
+  {
+    id: "article",
+    label: "Artigo",
+    description: "Estrutura para artigos científicos",
+    icon: LayoutTemplate,
+  },
+] as const;
 
-export default function Home() {
-  const { startLoading, stopLoading, loading } = useLoadStore();
-  const { theme } = useThemeStore();
-  const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
-  const [value, setValue] = React.useState<string>("");
-  const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lspClientRef = React.useRef<LSPClient | null>(null);
+type TemplateId = (typeof templates)[number]["id"];
 
-  React.useEffect(() => {
-    const client = new LSPClient({
-      rootUri: "file:///tmp/timer-latex",
-      extensions: [...languageServerExtensions(), serverDiagnostics()],
+const createLaTeXSchema = z.object({
+  name: z.string().min(1, "O nome do projeto é obrigatório"),
+  template: z.enum(["empty", "simple", "article"]),
+});
+
+type CreateLaTeXValues = z.infer<typeof createLaTeXSchema>;
+
+const CreateLaTeX = React.memo(() => {
+  const navigate = useNavigate();
+  const [open, setOpen] = React.useState(false);
+
+  const { control, handleSubmit, reset } = useForm<CreateLaTeXValues>({
+    resolver: zodResolver(createLaTeXSchema),
+    defaultValues: { name: "", template: "empty" },
+  });
+
+  async function onSubmit(data: CreateLaTeXValues) {
+    await invoke("create_project", {
+      title: data.name,
+      template: data.template,
     });
-    lspClientRef.current = client;
-
-    let mounted = true;
-
-    createTexlabTransport()
-      .then((transport) => {
-        if (!mounted) return;
-        client.connect(transport);
-        setLspExtensions([client.plugin(FILE_URI, "latex")]);
-      })
-      .catch(console.error);
-
-    return () => {
-      mounted = false;
-      client.disconnect();
-    };
-  }, []);
-
-  async function compile(content: string) {
-    startLoading();
-    const bytes: number[] = await invoke("compile_latex", { content });
-    setPdfData(new Uint8Array(bytes));
+    navigate("/" + data.name);
+    console.log(data);
+    setOpen(false);
+    reset();
   }
 
-  const onChange = React.useCallback((val: string) => {
-    setValue(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
-  }, []);
-
   return (
-    <main className="flex flex-col h-full">
-      <TitleBar />
-      <ResizablePanelGroup className="flex-1 min-h-0">
-        <ResizablePanel defaultSize={50}>
-          <div className="h-full">
-            <CodeMirror
-              value={value}
-              height="100%"
-              style={{ height: "100%" }}
-              theme={theme}
-              extensions={[
-                latex(),
-                lintGutter(),
-                bracketMatching(),
-                ...lspExtensions,
-              ]}
-              onChange={onChange}
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button>Criar LaTeX</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Novo projeto LaTeX</DialogTitle>
+          <DialogDescription>
+            Preencha as informações para criar seu projeto.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
+          <FieldGroup>
+            <Controller
+              control={control}
+              name="name"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={field.name}>Nome do projeto</FieldLabel>
+                  <Input
+                    {...field}
+                    id={field.name}
+                    placeholder="Meu artigo"
+                    autoComplete="off"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
             />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={50}>
-          <div className="relative flex h-full flex-col">
-            {loading > 0 && (
-              <div className="absolute z-50 w-full h-full flex gap-2 justify-center items-center bg-primary/40 backdrop-blur-lg">
-                <div className="animate-pulse flex gap-2 justify-center text-primary-foreground">
-                  <Spinner className="size-5" />
-                  <p>Compilando...</p>
-                </div>
-              </div>
-            )}
-            <LatexPreview pdfData={pdfData} />
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
-      <StatusBar />
+
+            <Field>
+              <FieldLabel>Template</FieldLabel>
+              <Controller
+                control={control}
+                name="template"
+                render={({ field }) => (
+                  <div className="grid grid-cols-2 gap-3">
+                    {templates.map((tpl) => {
+                      const Icon = tpl.icon;
+                      const selected = field.value === tpl.id;
+                      return (
+                        <button
+                          key={tpl.id}
+                          type="button"
+                          onClick={() => field.onChange(tpl.id as TemplateId)}
+                          className={`flex flex-col items-start gap-2 rounded-lg border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                            selected
+                              ? "border-primary bg-primary/5 dark:bg-primary/10"
+                              : "border-border bg-transparent hover:bg-muted/50"
+                          }`}
+                        >
+                          <div
+                            className={`rounded-md p-1.5 ${selected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}
+                          >
+                            <Icon className="size-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{tpl.label}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {tpl.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              />
+            </Field>
+          </FieldGroup>
+
+          <DialogFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit">Criar projeto</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+});
+
+export default function Home() {
+  return (
+    <main className="flex flex-col h-full bg-background">
+      <TitleBar />
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FolderCode />
+          </EmptyMedia>
+          <EmptyTitle>Nenhum projeto ainda</EmptyTitle>
+          <EmptyDescription>
+            Crie ou importe seus projetos LaTeX e comece a escrever com estilo
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="flex-row justify-center gap-2">
+          <CreateLaTeX />
+          <Button variant="outline">Importar LaTeX</Button>
+        </EmptyContent>
+      </Empty>
     </main>
   );
 }

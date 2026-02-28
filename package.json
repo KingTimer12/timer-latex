@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@codemirror/lsp-client": "^6.2.1",
+    "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/vite": "^4.2.1",
     "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-opener": "^2.5.3",
