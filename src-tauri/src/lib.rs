@@ -25,6 +25,8 @@ pub fn run() {
             get_project_dir,
             project::create_project,
             project::compile_project,
+            project::list_projects,
+            project::load_content,
             textlab::start_texlab,
             textlab::send_to_texlab,
             textlab::stop_texlab,

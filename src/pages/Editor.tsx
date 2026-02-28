@@ -5,20 +5,12 @@ import React from "react";
 import LatexPreview from "@/components/latex-preview";
 import TitleBar from "@/components/title-bar";
 import StatusBar from "@/components/status-bar";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import {
-  LSPClient,
-  languageServerExtensions,
-  serverDiagnostics,
-} from "@codemirror/lsp-client";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { LSPClient, languageServerExtensions, serverDiagnostics } from "@codemirror/lsp-client";
 import { lintGutter } from "@codemirror/lint";
 import { bracketMatching } from "@codemirror/language";
 import { createTexlabTransport } from "@/lib/texlab-transport";
-import { type Extension } from "@codemirror/state";
+import type { Extension } from "@codemirror/state";
 import { useLoadStore } from "@/hook/loading-store";
 import { useThemeStore } from "@/hook/theme-store";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,11 +24,17 @@ export default function Editor() {
   const { startLoading, stopLoading, loading } = useLoadStore();
   const { setContentData, contentData } = useContentDataStore();
   const { theme } = useThemeStore();
+
   const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
   const [compileError, setCompileError] = React.useState<string | null>(null);
   const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
+
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lspClientRef = React.useRef<LSPClient | null>(null);
+
+  React.useEffect(() => {
+    if (contentData === "") invoke<string>("load_content", { title: file }).then(setContentData);
+  }, [setContentData, contentData, file]);
 
   React.useEffect(() => {
     let mounted = true;
@@ -90,12 +88,15 @@ export default function Editor() {
     }
   }
 
-  const onChange = React.useCallback((val: string) => {
-    setContentData(val);
-    invoke("write_tex", { content: val }).catch(() => {});
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
-  }, [setContentData]);
+  const onChange = React.useCallback(
+    (val: string) => {
+      setContentData(val);
+      invoke("write_tex", { content: val }).catch(() => {});
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
+    },
+    [setContentData],
+  );
 
   return (
     <main className="flex flex-col h-full">
@@ -108,12 +109,7 @@ export default function Editor() {
               height="100%"
               style={{ height: "100%" }}
               theme={theme}
-              extensions={[
-                latex(),
-                lintGutter(),
-                bracketMatching(),
-                ...lspExtensions,
-              ]}
+              extensions={[latex(), lintGutter(), bracketMatching(), ...lspExtensions]}
               onChange={onChange}
             />
           </div>

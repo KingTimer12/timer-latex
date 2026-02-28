@@ -16,7 +16,7 @@ import { useContentDataStore } from "@/hook/content-data";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoke } from "@tauri-apps/api/core";
 import { FileText, FolderCode, LayoutTemplate } from "lucide-react";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -162,22 +162,55 @@ const CreateLaTeX = React.memo(() => {
 });
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<string[]>([]);
+
+  useEffect(() => {
+    invoke<string[]>("list_projects").then(setProjects);
+  }, []);
+
+  const onClick = useCallback(
+    (file: string) => {
+      navigate("/" + file);
+    },
+    [navigate],
+  );
+
   return (
     <main className="flex flex-col h-full bg-background">
       <TitleBar />
-      <Empty>
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <FolderCode />
-          </EmptyMedia>
-          <EmptyTitle>Nenhum projeto ainda</EmptyTitle>
-          <EmptyDescription>Crie ou importe seus projetos LaTeX e comece a escrever com estilo</EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent className="flex-row justify-center gap-2">
-          <CreateLaTeX />
-          <Button variant="outline">Importar LaTeX</Button>
-        </EmptyContent>
-      </Empty>
+      {projects.length === 0 ? (
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <FolderCode />
+            </EmptyMedia>
+            <EmptyTitle>Nenhum projeto ainda</EmptyTitle>
+            <EmptyDescription>Crie ou importe seus projetos LaTeX e comece a escrever com estilo</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent className="flex-row justify-center gap-2">
+            <CreateLaTeX />
+            <Button variant="outline">Importar LaTeX</Button>
+          </EmptyContent>
+        </Empty>
+      ) : (
+        <div className="flex flex-col gap-2 p-4">
+          <div className="flex justify-end gap-2 mb-2">
+            <CreateLaTeX />
+            <Button variant="outline">Importar LaTeX</Button>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {projects.map((project) => (
+              <li key={project}>
+                <Button variant="ghost" className="w-full justify-start gap-2" onClick={() => onClick(project.split(".")[0])}>
+                  <FileText className="size-4" />
+                  {project}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </main>
   );
 }

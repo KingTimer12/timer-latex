@@ -14,6 +14,31 @@ fn project(app: &AppHandle, title: &str, content: &str) -> Result<PathBuf, Strin
 }
 
 #[tauri::command]
+pub fn load_content(app: AppHandle, title: String) -> String {
+    let file_name = format!("{}.tex", title);
+    let dir = project_dir(&app).unwrap().join(file_name);
+    println!("{:?}", dir);
+    fs::read_to_string(dir).unwrap()
+}
+
+#[tauri::command]
+pub fn list_projects(app: AppHandle) -> Vec<String> {
+    let dir = project_dir(&app).unwrap();
+    fs::read_dir(dir)
+        .unwrap()
+        .filter_map(|entry| {
+            let path = entry.unwrap().path();
+            let ext = path.extension()?.to_str()?.to_string();
+            if ext == "tex" {
+                Some(path.file_name()?.to_str()?.to_string())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+#[tauri::command]
 pub async fn create_project(
     app: AppHandle,
     title: String,
@@ -40,7 +65,11 @@ Hello, World!
 }
 
 #[tauri::command]
-pub async fn compile_project(app: AppHandle, title: String, content: String) -> Result<Vec<u8>, String> {
+pub async fn compile_project(
+    app: AppHandle,
+    title: String,
+    content: String,
+) -> Result<Vec<u8>, String> {
     let dir = project_dir(&app)?;
     let tex_path = project(&app, &title, &content)?;
 
