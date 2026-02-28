@@ -25,12 +25,13 @@ case "$OS" in
   Darwin)
     TEXLAB_TRIPLE="x86_64-apple-darwin"
     TECTONIC_TRIPLE="x86_64-apple-darwin"
+    TEXLAB_ARCH="x86_64"
     case "$ARCH" in
-      arm64)  TEXLAB_TRIPLE="aarch64-apple-darwin" ; TECTONIC_TRIPLE="aarch64-apple-darwin" ;;
+      arm64)  TEXLAB_TRIPLE="aarch64-apple-darwin" ; TECTONIC_TRIPLE="aarch64-apple-darwin" ; TEXLAB_ARCH="aarch64" ;;
       x86_64) ;;
       *) echo "Unsupported arch: $ARCH"; exit 1 ;;
     esac
-    TEXLAB_URL="https://github.com/latex-lsp/texlab/releases/download/v${TEXLAB_VERSION}/texlab-${ARCH}-macos.tar.gz"
+    TEXLAB_URL="https://github.com/latex-lsp/texlab/releases/download/v${TEXLAB_VERSION}/texlab-${TEXLAB_ARCH}-macos.tar.gz"
     TECTONIC_URL="https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-${TECTONIC_TRIPLE}.tar.gz"
     ;;
   *)
