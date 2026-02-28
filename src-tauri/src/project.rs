@@ -18,7 +18,7 @@ pub async fn create_project(
     app: AppHandle,
     title: String,
     template: String,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let content = match template.as_str() {
         "empty" => "",
         "simple" => {
@@ -36,7 +36,7 @@ Hello, World!
         _ => return Err(format!("Unknown template: {}", template)),
     };
     project(&app, &title, content)?;
-    Ok(())
+    Ok(content.to_string())
 }
 
 #[tauri::command]

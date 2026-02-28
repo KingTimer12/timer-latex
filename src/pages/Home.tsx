@@ -9,21 +9,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useContentDataStore } from "@/hook/content-data";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoke } from "@tauri-apps/api/core";
 import { FileText, FolderCode, LayoutTemplate } from "lucide-react";
@@ -63,6 +52,7 @@ const createLaTeXSchema = z.object({
 type CreateLaTeXValues = z.infer<typeof createLaTeXSchema>;
 
 const CreateLaTeX = React.memo(() => {
+  const setContentData = useContentDataStore((s) => s.setContentData);
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
 
@@ -72,10 +62,11 @@ const CreateLaTeX = React.memo(() => {
   });
 
   async function onSubmit(data: CreateLaTeXValues) {
-    await invoke("create_project", {
+    const content: string = await invoke("create_project", {
       title: data.name,
       template: data.template,
     });
+    setContentData(content);
     navigate("/" + data.name);
     console.log(data);
     setOpen(false);
@@ -96,9 +87,7 @@ const CreateLaTeX = React.memo(() => {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Novo projeto LaTeX</DialogTitle>
-          <DialogDescription>
-            Preencha as informações para criar seu projeto.
-          </DialogDescription>
+          <DialogDescription>Preencha as informações para criar seu projeto.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
@@ -116,9 +105,7 @@ const CreateLaTeX = React.memo(() => {
                     autoComplete="off"
                     aria-invalid={fieldState.invalid}
                   />
-                  {fieldState.invalid && (
-                    <FieldError errors={[fieldState.error]} />
-                  )}
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )}
             />
@@ -151,9 +138,7 @@ const CreateLaTeX = React.memo(() => {
                           </div>
                           <div>
                             <p className="text-sm font-medium">{tpl.label}</p>
-                            <p className="text-muted-foreground text-xs">
-                              {tpl.description}
-                            </p>
+                            <p className="text-muted-foreground text-xs">{tpl.description}</p>
                           </div>
                         </button>
                       );
@@ -165,11 +150,7 @@ const CreateLaTeX = React.memo(() => {
           </FieldGroup>
 
           <DialogFooter className="mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
             <Button type="submit">Criar projeto</Button>
@@ -190,9 +171,7 @@ export default function Home() {
             <FolderCode />
           </EmptyMedia>
           <EmptyTitle>Nenhum projeto ainda</EmptyTitle>
-          <EmptyDescription>
-            Crie ou importe seus projetos LaTeX e comece a escrever com estilo
-          </EmptyDescription>
+          <EmptyDescription>Crie ou importe seus projetos LaTeX e comece a escrever com estilo</EmptyDescription>
         </EmptyHeader>
         <EmptyContent className="flex-row justify-center gap-2">
           <CreateLaTeX />

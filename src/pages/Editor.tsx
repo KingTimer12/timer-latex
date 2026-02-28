@@ -23,16 +23,17 @@ import { useLoadStore } from "@/hook/loading-store";
 import { useThemeStore } from "@/hook/theme-store";
 import { Spinner } from "@/components/ui/spinner";
 import { useParams } from "react-router-dom";
+import { useContentDataStore } from "@/hook/content-data";
 
 const DEBOUNCE_MS = 1000;
 
 export default function Editor() {
   const { file } = useParams();
   const { startLoading, stopLoading, loading } = useLoadStore();
+  const { setContentData, contentData } = useContentDataStore();
   const { theme } = useThemeStore();
   const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
   const [compileError, setCompileError] = React.useState<string | null>(null);
-  const [value, setValue] = React.useState<string>("");
   const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lspClientRef = React.useRef<LSPClient | null>(null);
@@ -90,11 +91,11 @@ export default function Editor() {
   }
 
   const onChange = React.useCallback((val: string) => {
-    setValue(val);
+    setContentData(val);
     invoke("write_tex", { content: val }).catch(() => {});
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
-  }, []);
+  }, [setContentData]);
 
   return (
     <main className="flex flex-col h-full">
@@ -103,7 +104,7 @@ export default function Editor() {
         <ResizablePanel defaultSize={50}>
           <div className="h-full">
             <CodeMirror
-              value={value}
+              value={contentData}
               height="100%"
               style={{ height: "100%" }}
               theme={theme}
