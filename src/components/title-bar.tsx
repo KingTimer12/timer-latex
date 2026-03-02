@@ -2,7 +2,11 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 
 const appWindow = getCurrentWindow();
 
-export default function TitleBar() {
+interface TitleBarProps {
+  title?: string
+}
+
+export default function TitleBar({ title = 'Timer LaTex' }: TitleBarProps) {
   return (
     <div
       data-tauri-drag-region
@@ -12,7 +16,7 @@ export default function TitleBar() {
         data-tauri-drag-region
         className="text-xs text-foreground font-medium tracking-wide"
       >
-        Timer LaTex
+        {title}
       </span>
 
       <div className="flex items-center gap-1.5">

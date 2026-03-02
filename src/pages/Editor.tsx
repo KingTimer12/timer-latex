@@ -88,19 +88,23 @@ export default function Editor() {
     }
   }
 
+  React.useEffect(() => {
+    if (!contentData) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => compile(contentData), DEBOUNCE_MS);
+  }, [contentData]);
+
   const onChange = React.useCallback(
     (val: string) => {
       setContentData(val);
       invoke("write_tex", { content: val }).catch(() => {});
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => compile(val), DEBOUNCE_MS);
     },
     [setContentData],
   );
 
   return (
     <main className="flex flex-col h-full">
-      <TitleBar />
+      <TitleBar title={`${file}.tex`} />
       <ResizablePanelGroup className="flex-1 min-h-0">
         <ResizablePanel defaultSize={50}>
           <div className="h-full">
