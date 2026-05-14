@@ -1,0 +1,177 @@
+/* Beamer's Beaver color theme */
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+code.hljs {
+  padding: 3px 5px;
+}
+
+/*!
+  Theme: Default
+  Description: Original highlight.js style
+  Author: (c) Ivan Sagalaev <maniac@softwaremaniacs.org>
+  Maintainer: @highlightjs/core-team
+  Website: https://highlightjs.org/
+  License: see project LICENSE
+  Touched: 2021
+*/
+/*
+This is left on purpose making default.css the single file that can be lifted
+as-is from the repository directly without the need for a build step
+
+Typically this "required" baseline CSS is added by `makestuff.js` during build.
+*/
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+}
+
+code.hljs {
+  padding: 3px 5px;
+}
+
+/* end baseline CSS */
+.hljs {
+  background: #F3F3F3;
+  color: #444;
+}
+
+/* Base color: saturation 0; */
+.hljs-subst {
+  /* default */
+}
+
+/* purposely ignored */
+.hljs-comment {
+  color: #697070;
+}
+
+.hljs-tag,
+.hljs-punctuation {
+  color: rgba(68, 68, 68, 0.6666666667);
+}
+
+.hljs-tag .hljs-name,
+.hljs-tag .hljs-attr {
+  color: #444;
+}
+
+.hljs-keyword,
+.hljs-attribute,
+.hljs-selector-tag,
+.hljs-meta .hljs-keyword,
+.hljs-doctag,
+.hljs-name {
+  font-weight: bold;
+}
+
+/* User color: hue: 0 */
+.hljs-type,
+.hljs-string,
+.hljs-number,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-quote,
+.hljs-template-tag,
+.hljs-deletion {
+  color: #880000;
+}
+
+.hljs-title,
+.hljs-section {
+  color: #880000;
+  font-weight: bold;
+}
+
+.hljs-regexp,
+.hljs-symbol,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-link,
+.hljs-selector-attr,
+.hljs-operator,
+.hljs-selector-pseudo {
+  color: #ab5656;
+}
+
+/* Language color: hue: 90; */
+.hljs-literal {
+  color: #695;
+}
+
+.hljs-built_in,
+.hljs-bullet,
+.hljs-code,
+.hljs-addition {
+  color: #397300;
+}
+
+/* Meta color: hue: 200 */
+.hljs-meta {
+  color: #1f7199;
+}
+
+.hljs-meta .hljs-string {
+  color: #38a;
+}
+
+/* Misc effects */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+:root {
+  --qd-primary-color: rgb(187, 39, 26);
+  --primary-darker: rgb(149, 29, 18);
+  --secondary: rgb(236, 236, 236);
+  --tertiary: rgb(216, 216, 216);
+  --qd-main-color: rgb(10, 10, 10);
+  --qd-background-color: white;
+  --qd-link-color: var(--qd-primary-color);
+  --qd-color-on-primary: var(--qd-background-color);
+  --qd-callout-background-color: rgb(234, 233, 247);
+  --qd-callout-content-foreground-color: var(--qd-main-color);
+  --qd-callout-title-foreground-color: rgb(83, 81, 152);
+  --qd-mermaid-node-background-color: var(--qd-background-color);
+  --qd-mermaid-node-text-color: var(--qd-main-color);
+}
+
+.quarkdown h1, .quarkdown h2 {
+  color: var(--qd-primary-color) !important;
+}
+.quarkdown h1:not(.box h1) {
+  background-color: var(--secondary);
+}
+.quarkdown .box.callout {
+  --qd-box-header-background-color: color-mix(in srgb, var(--qd-callout-title-foreground-color) 7%, var(--qd-callout-background-color));
+}
+.quarkdown .box.callout .box-content li::marker {
+  color: var(--qd-callout-foreground-color);
+}
+.quarkdown .box.callout:has(.box-content h1) {
+  background-color: var(--secondary);
+}
+.quarkdown .color-preview {
+  border-color: var(--secondary) !important;
+}
+.quarkdown .page-margin-bottom-center > * {
+  background-color: var(--tertiary);
+  color: var(--qd-primary-color);
+}
+.quarkdown .page-margin-bottom-center > *:first-child {
+  background-color: var(--qd-primary-color);
+  color: white;
+}
+.quarkdown .page-margin-bottom-center > *:nth-child(even) {
+  background-color: var(--secondary);
+}
+
+/*# sourceMappingURL=beaver.css.map */

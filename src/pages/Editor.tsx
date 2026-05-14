@@ -1,5 +1,6 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { latex } from "codemirror-lang-latex";
+import { markdown } from "@codemirror/lang-markdown";
 import { invoke } from "@tauri-apps/api/core";
 import React from "react";
 import LatexPreview from "@/components/latex-preview";
@@ -20,12 +21,20 @@ import { useContentDataStore } from "@/hook/content-data";
 const DEBOUNCE_MS = 1000;
 
 export default function Editor() {
-  const { file } = useParams();
+  const { file: rawFile } = useParams();
+  // rawFile is the full filename e.g. "meu-doc.qd" or "meu-doc.tex"
+  const filename = rawFile ? decodeURIComponent(rawFile) : "";
+  const ext = filename.split(".").pop() ?? "tex";
+  const title = filename.replace(/\.(tex|qd)$/, "");
+  const isQuarkdown = ext === "qd";
+  const projectType = isQuarkdown ? "quarkdown" : "latex";
+
   const { startLoading, stopLoading, loading } = useLoadStore();
   const { setContentData, contentData } = useContentDataStore();
   const { theme } = useThemeStore();
 
   const [pdfData, setPdfData] = React.useState<Uint8Array | null>(null);
+  const [htmlData, setHtmlData] = React.useState<string | null>(null);
   const [compileError, setCompileError] = React.useState<string | null>(null);
   const [lspExtensions, setLspExtensions] = React.useState<Extension[]>([]);
 
@@ -33,10 +42,12 @@ export default function Editor() {
   const lspClientRef = React.useRef<LSPClient | null>(null);
 
   React.useEffect(() => {
-    if (contentData === "") invoke<string>("load_content", { title: file }).then(setContentData);
-  }, [setContentData, contentData, file]);
+    if (contentData === "") invoke<string>("load_content", { title, projectType }).then(setContentData);
+  }, [setContentData, contentData, title, projectType]);
 
   React.useEffect(() => {
+    if (isQuarkdown) return;
+
     let mounted = true;
 
     invoke<string>("get_project_dir").then((dir) => {
@@ -64,20 +75,23 @@ export default function Editor() {
       mounted = false;
       lspClientRef.current?.disconnect();
     };
-  }, []);
+  }, [isQuarkdown]);
 
   async function compile(content: string) {
     startLoading();
     try {
-      const bytes: number[] = await invoke("compile_project", {
-        content,
-        title: file,
-      });
-      setPdfData(new Uint8Array(bytes));
+      if (isQuarkdown) {
+        const html: string = await invoke("compile_quarkdown_project", { content, title });
+        setHtmlData(html);
+        setPdfData(null);
+      } else {
+        const bytes: number[] = await invoke("compile_project", { content, title });
+        setPdfData(new Uint8Array(bytes));
+        setHtmlData(null);
+      }
       setCompileError(null);
     } catch (e) {
       const raw = String(e);
-      // Extrai apenas as linhas de erro do stderr do tectonic, removendo "downloading..." noise
       const errorLines = raw
         .split("\n")
         .filter((l) => l.startsWith("error:") || l.startsWith("!"))
@@ -92,19 +106,23 @@ export default function Editor() {
     if (!contentData) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => compile(contentData), DEBOUNCE_MS);
-  }, [contentData]);
+  }, [contentData, isQuarkdown]);
 
   const onChange = React.useCallback(
     (val: string) => {
       setContentData(val);
-      invoke("write_tex", { content: val }).catch(() => {});
+      invoke("save_content", { title, content: val, projectType }).catch(console.error);
     },
-    [setContentData],
+    [setContentData, title, projectType],
   );
+
+  const editorExtensions = isQuarkdown
+    ? [markdown()]
+    : [latex(), lintGutter(), bracketMatching(), ...lspExtensions];
 
   return (
     <main className="flex flex-col h-full">
-      <TitleBar title={`${file}.tex`} />
+      <TitleBar title={filename} showBack />
       <ResizablePanelGroup className="flex-1 min-h-0">
         <ResizablePanel defaultSize={50}>
           <div className="h-full">
@@ -113,7 +131,7 @@ export default function Editor() {
               height="100%"
               style={{ height: "100%" }}
               theme={theme}
-              extensions={[latex(), lintGutter(), bracketMatching(), ...lspExtensions]}
+              extensions={editorExtensions}
               onChange={onChange}
             />
           </div>
@@ -129,7 +147,24 @@ export default function Editor() {
                 </div>
               </div>
             )}
-            <LatexPreview pdfData={pdfData} />
+
+            {isQuarkdown ? (
+              htmlData ? (
+                <iframe
+                  srcDoc={htmlData}
+                  className="flex-1 w-full border-none bg-white"
+                  sandbox="allow-scripts"
+                  title="Quarkdown preview"
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+                  Aguardando compilação...
+                </div>
+              )
+            ) : (
+              <LatexPreview pdfData={pdfData} />
+            )}
+
             {compileError && (
               <div className="shrink-0 max-h-40 overflow-y-auto border-t border-destructive/40 bg-destructive/5 px-3 py-2">
                 <pre className="text-destructive text-xs font-mono whitespace-pre-wrap leading-relaxed">

@@ -1,23 +1,47 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
+import { useContentDataStore } from "@/hook/content-data";
 
 const appWindow = getCurrentWindow();
 
 interface TitleBarProps {
-  title?: string
+  title?: string;
+  showBack?: boolean;
 }
 
-export default function TitleBar({ title = 'Timer LaTex' }: TitleBarProps) {
+export default function TitleBar({ title = "Timer LaTex", showBack = false }: TitleBarProps) {
+  const navigate = useNavigate();
+  const clearContentData = useContentDataStore((s) => s.clearContentData);
+
+  function goHome() {
+    clearContentData();
+    navigate("/");
+  }
+
   return (
     <div
       data-tauri-drag-region
       className="flex items-center justify-between h-9 px-3 bg-background rounded-t-xl select-none shrink-0"
     >
-      <span
-        data-tauri-drag-region
-        className="text-xs text-foreground font-medium tracking-wide"
-      >
-        {title}
-      </span>
+      <div className="flex items-center gap-1" data-tauri-drag-region>
+        {showBack && (
+          <button
+            onClick={goHome}
+            className="flex items-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors mr-1"
+            aria-label="Voltar para projetos"
+          >
+            <ChevronLeft className="size-3.5" />
+            <span className="text-xs">Projetos</span>
+          </button>
+        )}
+        <span
+          data-tauri-drag-region
+          className="text-xs text-foreground font-medium tracking-wide"
+        >
+          {title}
+        </span>
+      </div>
 
       <div className="flex items-center gap-1.5">
         <button
